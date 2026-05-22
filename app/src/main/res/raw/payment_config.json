@@ -1,0 +1,30 @@
+{
+  "apiVersion": 2,
+  "apiVersionMinor": 0,
+  "allowedPaymentMethods": [
+    {
+      "type": "CARD",
+      "parameters": {
+        "allowedAuthMethods": ["PAN_ONLY", "CRYPTOGRAM_3DS"],
+        "allowedCardNetworks": ["VISA", "MASTERCARD", "AMEX", "DISCOVER"]
+      },
+      "tokenizationSpecification": {
+        "type": "PAYMENT_GATEWAY",
+        "parameters": {
+          "gateway": "example",
+          "gatewayMerchantId": "exampleMerchantId"
+        }
+      }
+    }
+  ],
+  "merchantInfo": {
+    "merchantName": "Fashion Store"
+  },
+  "transactionInfo": {
+    "totalPriceStatus": "FINAL",
+    "totalPrice": "0.00",
+    "countryCode": "VN",
+    "currencyCode": "VND",
+    "checkoutOption": "COMPLETE_IMMEDIATE_PURCHASE"
+  }
+}

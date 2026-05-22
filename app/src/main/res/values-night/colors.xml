@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="purple_500">#EA580C</color>
+    <color name="teal_200">#86A38A</color>
+
+    <color name="app_background">#1C1917</color>
+    <color name="app_surface">#292524</color>
+    <color name="app_surface_elevated">#34302C</color>
+    <color name="app_surface_muted">#3F3A36</color>
+    <color name="app_surface_dark">#0C0A09</color>
+    <color name="app_surface_dark_soft">#1C1917</color>
+
+    <color name="text_primary">#FAFAF9</color>
+    <color name="text_secondary">#D6D3D1</color>
+    <color name="text_muted">#A8A29E</color>
+    <color name="text_on_dark">#FAFAF9</color>
+    <color name="text_on_accent">#FFFBF5</color>
+    <color name="text_body">#D6D3D1</color>
+
+    <color name="accent_primary">#EA580C</color>
+    <color name="accent_secondary">#FDBA74</color>
+    <color name="accent_link">#86EFAC</color>
+    <color name="accent_soft">#57534E</color>
+
+    <color name="border_default">#57534E</color>
+    <color name="divider_soft">#44403C</color>
+
+    <color name="price">#FDBA74</color>
+    <color name="price_highlight">#FBBF24</color>
+
+    <color name="success">#86EFAC</color>
+    <color name="success_muted">#14532D</color>
+    <color name="info_muted">#1E3A5F</color>
+    <color name="info_text">#BFDBFE</color>
+
+    <color name="error">#FCA5A5</color>
+    <color name="error_soft">#450A0A</color>
+
+    <color name="hero_text_subtle">#A8A29E</color>
+    <color name="card_chat_ai_bg">#3F3A36</color>
+    <color name="card_chat_ai_title">#FFEDD5</color>
+    <color name="card_chat_ai_body">#D6D3D1</color>
+    <color name="card_chat_ai_icon_bg">#292524</color>
+
+    <color name="chat_bot_bubble">#3F3A36</color>
+    <color name="chat_user_bubble">#9A3412</color>
+    <color name="chat_compose_bar">#292524</color>
+    <color name="chat_toolbar_bg">#292524</color>
+
+    <color name="top_product_strip_bg">#0C0A09</color>
+    <color name="top_product_image_bg">#292524</color>
+    <color name="top_product_title">#FAFAF9</color>
+    <color name="top_product_price">#FBBF24</color>
+
+    <color name="image_placeholder">#44403C</color>
+    <color name="image_placeholder_fg">#A8A29E</color>
+
+    <color name="status_on_sale">#86EFAC</color>
+    <color name="status_off_sale">#FCA5A5</color>
+
+    <color name="bottom_nav_surface">#292524</color>
+    <color name="bottom_nav_indicator">#431407</color>
+</resources>

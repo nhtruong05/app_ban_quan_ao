@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tương thích theme / hệ thống -->
+    <color name="black">#FF1C1917</color>
+    <color name="white">#FFFFFBF7</color>
+    <color name="purple_500">#7C2D12</color>
+    <color name="teal_200">#5C7158</color>
+
+    <!-- Nền & bề mặt -->
+    <color name="app_background">#F0E8DC</color>
+    <color name="app_surface">#FFFBF5</color>
+    <color name="app_surface_elevated">#FFFFFF</color>
+    <color name="app_surface_muted">#E8DFD4</color>
+    <color name="app_surface_dark">#292524</color>
+    <color name="app_surface_dark_soft">#3F3A36</color>
+
+    <!-- Chữ -->
+    <color name="text_primary">#1C1917</color>
+    <color name="text_secondary">#57534E</color>
+    <color name="text_muted">#A8A29E</color>
+    <color name="text_on_dark">#FAFAF9</color>
+    <color name="text_on_accent">#FFFBF5</color>
+    <color name="text_body">#44403C</color>
+
+    <!-- Nhấn -->
+    <color name="accent_primary">#7C2D12</color>
+    <color name="accent_secondary">#B45309</color>
+    <color name="accent_link">#1B4332</color>
+    <color name="accent_soft">#D6C4B0</color>
+
+    <color name="border_default">#D6CEC2</color>
+    <color name="divider_soft">#C4B8A8</color>
+
+    <color name="price">#7C2D12</color>
+    <color name="price_highlight">#B45309</color>
+
+    <color name="success">#166534</color>
+    <color name="success_muted">#DCFCE7</color>
+    <color name="info_muted">#DBEAFE</color>
+    <color name="info_text">#1E3A5F</color>
+
+    <color name="error">#991B1B</color>
+    <color name="error_soft">#FEE2E2</color>
+
+    <!-- Home / marketing -->
+    <color name="hero_text_subtle">#D6D3D1</color>
+    <color name="card_chat_ai_bg">#EDE4D8</color>
+    <color name="card_chat_ai_title">#431407</color>
+    <color name="card_chat_ai_body">#57534E</color>
+    <color name="card_chat_ai_icon_bg">#FFFBF5</color>
+
+    <!-- Chat -->
+    <color name="chat_bot_bubble">#E8E0D4</color>
+    <color name="chat_user_bubble">#431407</color>
+    <color name="chat_compose_bar">#FFFBF5</color>
+    <color name="chat_toolbar_bg">#FFFBF5</color>
+
+    <!-- Carousel nhỏ trên Home -->
+    <color name="top_product_strip_bg">#292524</color>
+    <color name="top_product_image_bg">#3F3A36</color>
+    <color name="top_product_title">#E7E5E4</color>
+    <color name="top_product_price">#FBBF24</color>
+
+    <color name="image_placeholder">#D6CEC2</color>
+    <color name="image_placeholder_fg">#78716C</color>
+
+    <!-- Trạng thái sản phẩm (dùng trong Kotlin + layout) -->
+    <color name="status_on_sale">#166534</color>
+    <color name="status_off_sale">#991B1B</color>
+
+    <!-- Bottom nav -->
+    <color name="bottom_nav_surface">#FFFBF5</color>
+    <color name="bottom_nav_indicator">#EDE4D8</color>
+</resources>

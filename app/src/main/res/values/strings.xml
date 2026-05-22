@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">AppThoiTrang</string>
+
+
+    <string name="back">Quay lại</string>
+    <string name="hot_icon">Sản phẩm hot</string>
+    <string name="bot_icon">Bot avatar</string>
+    <string name="user_icon">User avatar</string>
+
+
+    <string name="price_format">%,.0f đ</string>
+    <string name="price_sample">120.000 đ</string>
+
+
+    <string name="search_hint">Tìm sản phẩm (ví dụ: áo thun, quần tây...)</string>
+    <string name="search_clear">Xóa</string>
+    <string name="empty_result">Không tìm thấy sản phẩm</string>
+</resources>
