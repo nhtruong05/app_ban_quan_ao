@@ -1,0 +1,21 @@
+.\venv\Scripts\activate #kích hoạt môi trường ảo
+
+cd C:\Users\DuongMinhTri\Downloads
+.\ngrok.exe http 5000
+
+=======================================chạy lấy ip ngrok==============================================
+& "C:\Users\DuongMinhTri\Downloads\ngrok.exe" http 5000
+
+
+
+Dữ liệu JSON thay đổi
+curl.exe -X POST http://127.0.0.1:5000/api/sync_knowledge
+
+Thêm sản phẩm MySQL
+curl.exe -X POST http://127.0.0.1:5000/api/sync_products
+
+
+=======chạy fontend=======
+cd admin-frontend
+npm run dev
+http://localhost:3000/

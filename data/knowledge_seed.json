@@ -1,0 +1,53 @@
+{
+  "size_guides": [
+    {
+      "id": "size_ao_v1",
+      "document": "[ÁO]\nS: cao 155–165 cm, nặng 45–55 kg\nM: cao 160–170 cm, nặng 50–60 kg\nL: cao 165–175 cm, nặng 55–70 kg\nXL: cao 170–180 cm, nặng 65–80 kg",
+      "metadata": { "type": "ao" }
+    },
+    {
+      "id": "size_quan_v1",
+      "document": "[QUẦN]\n28: eo 71–73 cm (~50–55 kg)\n29–30: eo 74–77 cm (~55–60 kg)\n31–32: eo 78–82 cm (~60–70 kg)\n33–34: eo 83–87 cm (~70–80 kg)\n36: eo 88–92 cm (~80–90 kg)",
+      "metadata": { "type": "quan" }
+    }
+  ],
+  "policies": [
+    {
+      "id": "shop_info",
+      "document": "Tên shop: VietNAm Fashion | Địa chỉ: 123 Nguyễn Văn Cừ, Quận 5, TP.HCM | Email: support@VietNamfashion.vn | SĐT: 0909 000 111 | Giờ: 9:00–21:00 (T2–CN)",
+      "metadata": { "topic": "shop_info" }
+    },
+    { "id": "policy_doi_tra", "document": "Đổi trả trong 7 ngày với sản phẩm còn tag, chưa qua sử dụng.", "metadata": { "topic": "doi_tra" } },
+    { "id": "policy_bao_hanh", "document": "Hỗ trợ bảo hành đường may trong 30 ngày.", "metadata": { "topic": "bao_hanh" } },
+    { "id": "policy_ship", "document": "Miễn phí vận chuyển cho đơn từ 499.000đ tại nội thành.", "metadata": { "topic": "ship" } },
+    { "id": "policy_payment", "document": "Hỗ trợ thanh toán COD, VNPAY, ví điện tử.", "metadata": { "topic": "payment" } }
+  ],
+  "materials": [
+    { "id": "mat_cotton", "document": "Cotton: thoáng mát, hút ẩm tốt → phù hợp mùa hè, thời tiết nóng.", "metadata": { "name": "cotton", "weather": "hot" } },
+    { "id": "mat_denim",  "document": "Jean (denim): bền, giữ ấm vừa phải → thích hợp mùa thu, trời mát.", "metadata": { "name": "denim",  "weather": "cool" } },
+    { "id": "mat_da",     "document": "Da: chắn gió, giữ ấm tốt → phù hợp mùa đông, trời lạnh.",          "metadata": { "name": "da",     "weather": "cold" } },
+    { "id": "mat_poly",   "document": "Polyester: nhẹ, chống nhăn, kháng nước nhẹ → phù hợp trời mưa.",   "metadata": { "name": "polyester", "weather": "rain" } }
+  ],
+  "care_guides": [
+    {
+      "id": "care_cotton",
+      "document": "Cotton: giặt máy ở nhiệt độ thường, dùng bột giặt nhẹ, phơi nơi thoáng mát, tránh nắng gắt. Có thể ủi ở nhiệt độ trung bình.",
+      "metadata": { "fabric": "cotton" }
+    },
+    {
+      "id": "care_polyester",
+      "document": "Polyester: giặt máy chế độ nhẹ, tránh nhiệt độ cao, không sấy quá nóng. Ủi ở nhiệt độ thấp.",
+      "metadata": { "fabric": "polyester" }
+    },
+    {
+      "id": "care_jean",
+      "document": "Jean (denim): lộn trái khi giặt, hạn chế giặt thường xuyên, không dùng chất tẩy mạnh. Nên phơi trong bóng râm.",
+      "metadata": { "fabric": "jean" }
+    },
+    {
+      "id": "care_da",
+      "document": "Da: không giặt máy, dùng khăn mềm ẩm để lau, tránh tiếp xúc trực tiếp với nước. Có thể dùng kem dưỡng da chuyên dụng để bảo quản.",
+      "metadata": { "fabric": "da" }
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+
+USE donhattruongapp;
+
+-- ========== USERS ==========
+CREATE TABLE users (
+  user_id INT AUTO_INCREMENT PRIMARY KEY,
+  taikhoan VARCHAR(50) NOT NULL UNIQUE,
+  matkhau VARCHAR(255) NOT NULL,
+  hoten VARCHAR(100),
+  email VARCHAR(100) UNIQUE,
+  sdt VARCHAR(20),
+  diachi VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========== ADMINS ==========
+CREATE TABLE admins (
+  admin_id INT AUTO_INCREMENT PRIMARY KEY,
+  taikhoan VARCHAR(100) NOT NULL UNIQUE,
+  matkhau VARCHAR(255) NOT NULL,
+  hoten VARCHAR(255),
+  email VARCHAR(255)
+);
+
+-- ========== PRODUCTS ==========
+CREATE TABLE products (
+  products_id INT AUTO_INCREMENT PRIMARY KEY,
+  ten_san_pham VARCHAR(200) NOT NULL,
+  gia_ban DECIMAL(12,2) NOT NULL,
+  loai VARCHAR(100),
+  mo_ta TEXT,
+  size VARCHAR(50),
+  chat_lieu VARCHAR(100),
+  gioi_tinh ENUM('Nam','Nữ','Unisex'),
+  hinh_anh VARCHAR(500),
+  trang_thai ENUM('Đang bán','Ngừng bán') DEFAULT 'Đang bán',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========== CARTS ==========
+CREATE TABLE carts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  status ENUM('ACTIVE','ABANDONED','CHECKED_OUT') DEFAULT 'ACTIVE',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_user_cart (user_id),
+  CONSTRAINT fk_cart_user FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+-- ========== CART_ITEMS ==========
+CREATE TABLE cart_items (
+  cart_item_id INT AUTO_INCREMENT PRIMARY KEY,
+  cart_id INT NOT NULL,
+  products_id INT NOT NULL,
+  quantity INT NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_cartitem_cart FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE,
+  CONSTRAINT fk_cartitem_product FOREIGN KEY (products_id) REFERENCES products(products_id),
+  UNIQUE KEY uq_cart_product (cart_id, products_id)
+);
+
+-- ========== ORDERS ==========
+CREATE TABLE orders (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  tongtien DECIMAL(12,2) DEFAULT 0,
+  trangthai ENUM('Chờ xác nhận','Đã thanh toán','Đang giao','Hoàn thành','Hủy') DEFAULT 'Chờ xác nhận',
+  diachi_giaohang VARCHAR(255),
+  hoten VARCHAR(100),
+  sdt VARCHAR(30),
+  payment_method VARCHAR(50),
+  payment_token VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_order_user FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+-- ========== ORDER_DETAILS ==========
+CREATE TABLE order_details (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  order_id INT NOT NULL,
+  product_id INT NOT NULL,
+  unit_price DECIMAL(12,2) NOT NULL,
+  quantity INT NOT NULL,
+  line_total DECIMAL(12,2) GENERATED ALWAYS AS (unit_price * quantity) STORED,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_od_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+  CONSTRAINT fk_od_product FOREIGN KEY (product_id) REFERENCES products(products_id),
+  UNIQUE KEY uq_order_product (order_id, product_id)
+);
+
+-- =====================
+-- ✅ Kiểm tra lại
+-- =====================
+SHOW TABLES;

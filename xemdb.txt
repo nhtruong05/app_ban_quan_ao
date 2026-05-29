@@ -1,0 +1,10 @@
+#Xem các “key” đang có trong metadata
+SELECT DISTINCT key
+FROM embedding_metadata
+ORDER BY key;
+
+#Query lấy document gốc
+SELECT id, key, string_value AS document_text
+FROM embedding_metadata
+WHERE key = 'chroma:document'
+LIMIT 10;

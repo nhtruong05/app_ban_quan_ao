@@ -1,0 +1,16 @@
+venv/
+__pycache__/
+*.pyc
+.env
+
+node_modules/
+
+.gradle/
+build/
+
+.idea/
+.vscode/
+venv/
+__pycache__/
+*.pyc
+.env
