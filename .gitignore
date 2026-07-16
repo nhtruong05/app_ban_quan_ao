@@ -1,18 +1,19 @@
+# Python
 venv/
 __pycache__/
 *.pyc
 .env
 
+# Node.js
 node_modules/
 
+# Android/Gradle
 .gradle/
 build/
 
+# IDE
 .idea/
 .vscode/
-venv/
-__pycache__/
-*.pyc
-.env
 
-chroma_db/*.sqlite3-journal
+# ChromaDB
+chroma_db/
