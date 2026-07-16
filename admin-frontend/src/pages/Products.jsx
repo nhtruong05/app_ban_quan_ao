@@ -1,29 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { apiFetch, formatVND } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 
+// Tach chuoi "S,M,L" -> ["S","M","L"]
+const splitVals = (s) =>
+  (s || '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+// Them/bo 1 gia tri trong mang (cho checkbox chon nhieu)
+const toggleIn = (arr, v) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+
+const GENDERS = ['Nam', 'Nữ', 'Unisex'];
+
+const EMPTY_FORM = {
+  ten_san_pham: '',
+  gia_ban: '',
+  category_id: '',
+  sizes: [],
+  chat_lieus: [],
+  gioi_tinhs: ['Unisex'],
+  mo_ta: '',
+  hinh_anh: '',
+  trang_thai: 'Đang bán',
+};
+
 const Products = () => {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [categoryFilter, setCategoryFilter] = useState(null); // id danh muc dang loc, null = tat ca
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({
-    ten_san_pham: '',
-    gia_ban: '',
-    loai: 'Áo',
-    size: 'S',
-    chat_lieu: 'Cotton',
-    gioi_tinh: 'Unisex',
-    mo_ta: '',
-    hinh_anh: '',
-    trang_thai: 'Đang bán',
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const { showToast } = useToast();
+
+  // Danh muc dang chon trong form (de lay sizes/chat_lieus tuong ung)
+  const selectedCategory = useMemo(
+    () => categories.find((c) => String(c.id) === String(formData.category_id)) || null,
+    [categories, formData.category_id]
+  );
+  const isFreesize = selectedCategory?.size_type === 'FREESIZE';
+  const groups = useMemo(() => [...new Set(categories.map((c) => c.nhom))], [categories]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -38,15 +62,28 @@ const Products = () => {
   }, [showForm]);
 
   useEffect(() => {
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
     loadProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search]);
+  }, [page, search, categoryFilter]);
+
+  const loadCategories = async () => {
+    try {
+      const json = await apiFetch('/api/categories');
+      setCategories(json.data || []);
+    } catch (error) {
+      showToast('Lỗi tải danh mục: ' + error.message);
+    }
+  };
 
   const loadProducts = async () => {
     try {
-      const res = await apiFetch(
-        `/api/admin/products?page=${page}&page_size=${pageSize}&q=${encodeURIComponent(search)}`
-      );
+      let url = `/api/admin/products?page=${page}&page_size=${pageSize}&q=${encodeURIComponent(search)}`;
+      if (categoryFilter) url += `&category_id=${categoryFilter}`;
+      const res = await apiFetch(url);
       setProducts(res.data?.items || []);
       setTotal(res.data?.total || 0);
     } catch (error) {
@@ -81,9 +118,37 @@ const Products = () => {
     return json.data?.path || json.data?.url || '';
   };
 
+  // Doi danh muc: giu lai size/chat lieu con hop le voi danh muc moi
+  const handleCategoryChange = (e) => {
+    const id = e.target.value;
+    const cat = categories.find((c) => String(c.id) === id);
+    setFormData((fd) => ({
+      ...fd,
+      category_id: id,
+      sizes: cat ? fd.sizes.filter((s) => cat.sizes.includes(s)) : [],
+      chat_lieus: cat ? fd.chat_lieus.filter((m) => cat.chat_lieus.includes(m)) : [],
+    }));
+  };
+
   const handleSave = async () => {
     if (!formData.ten_san_pham) {
       showToast('Thiếu tên sản phẩm');
+      return;
+    }
+    if (!formData.category_id) {
+      showToast('Hãy chọn danh mục cho sản phẩm');
+      return;
+    }
+    if (!isFreesize && formData.sizes.length === 0) {
+      showToast('Chọn ít nhất 1 size');
+      return;
+    }
+    if (formData.chat_lieus.length === 0) {
+      showToast('Chọn ít nhất 1 chất liệu');
+      return;
+    }
+    if (formData.gioi_tinhs.length === 0) {
+      showToast('Chọn ít nhất 1 giới tính');
       return;
     }
 
@@ -93,10 +158,8 @@ const Products = () => {
         imageUrl = await uploadImage(selectedFile);
       }
 
-      // Normalize image URL: chỉ gửi relative path hoặc giữ nguyên nếu đã là relative
-      // Backend sẽ xử lý normalize
+      // Normalize image URL: chỉ gửi relative path
       if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
-        // Nếu là absolute URL, extract relative path
         try {
           const urlObj = new URL(imageUrl);
           imageUrl = urlObj.pathname;
@@ -106,9 +169,17 @@ const Products = () => {
       }
 
       const body = {
-        ...formData,
+        ten_san_pham: formData.ten_san_pham,
         gia_ban: Number(formData.gia_ban || 0),
+        category_id: Number(formData.category_id),
+        // chon nhieu -> luu chuoi "S,M,L" vao cot san co (khong doi schema)
+        size: isFreesize ? 'Freesize' : formData.sizes.join(','),
+        chat_lieu: formData.chat_lieus.join(','),
+        gioi_tinh: formData.gioi_tinhs.join(','),
+        mo_ta: formData.mo_ta,
         hinh_anh: imageUrl,
+        trang_thai: formData.trang_thai,
+        // khong gui "loai": server tu ghi loai = ten danh muc theo category_id
       };
 
       if (editingId) {
@@ -135,27 +206,31 @@ const Products = () => {
 
   const handleEdit = async (id) => {
     try {
-      // Dùng endpoint admin để lấy dữ liệu raw (relative path)
       const res = await apiFetch(`/api/admin/products/${id}`);
       const product = res.data;
+
+      // San pham cu chua co category_id -> thu khop theo ten danh muc (cot loai)
+      const catId =
+        product.category_id ||
+        categories.find((c) => c.ten === product.loai)?.id ||
+        '';
+
+      const genders = splitVals(product.gioi_tinh);
       setFormData({
         ten_san_pham: product.ten_san_pham || '',
         gia_ban: product.gia_ban || '',
-        loai: product.loai || 'Áo',
-        size: product.size || 'S',
-        chat_lieu: product.chat_lieu || 'Cotton',
-        gioi_tinh: product.gioi_tinh || 'Unisex',
+        category_id: catId ? String(catId) : '',
+        sizes: splitVals(product.size).filter((s) => s !== 'Freesize'),
+        chat_lieus: splitVals(product.chat_lieu),
+        gioi_tinhs: genders.length ? genders : ['Unisex'],
         mo_ta: product.mo_ta || '',
         hinh_anh: product.hinh_anh || '',
         trang_thai: product.trang_thai === 'Đang bán' ? 'Đang bán' : 'Ngừng bán',
       });
       setEditingId(id);
-      // Reset selectedFile khi edit
       setSelectedFile(null);
-      // Set preview với ảnh hiện tại của sản phẩm (convert relative path sang absolute URL)
       if (product.hinh_anh) {
         const imageUrl = getImageUrl(product.hinh_anh);
-        console.log('[Products] Edit product:', { id, hinh_anh: product.hinh_anh, imageUrl });
         setPreview(imageUrl);
       } else {
         setPreview(null);
@@ -178,17 +253,7 @@ const Products = () => {
   };
 
   const resetForm = () => {
-    setFormData({
-      ten_san_pham: '',
-      gia_ban: '',
-      loai: 'Áo',
-      size: 'S',
-      chat_lieu: 'Cotton',
-      gioi_tinh: 'Unisex',
-      mo_ta: '',
-      hinh_anh: '',
-      trang_thai: 'Đang bán',
-    });
+    setFormData(EMPTY_FORM);
     setEditingId(null);
     setSelectedFile(null);
     setPreview(null);
@@ -196,11 +261,9 @@ const Products = () => {
 
   const getImageUrl = (url) => {
     if (!url) return '';
-    // Nếu đã là absolute URL, dùng luôn
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
-    // Nếu là relative path, thêm API base
     const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
     const cleanPath = url.startsWith('/') ? url : `/${url}`;
     return `${API_BASE}${cleanPath}`;
@@ -235,6 +298,31 @@ const Products = () => {
           >
             + Thêm sản phẩm
           </button>
+        </div>
+
+        {/* Thanh loc theo danh muc */}
+        <div className="row" style={{ flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+          <button
+            className={categoryFilter === null ? '' : 'btn-secondary'}
+            onClick={() => {
+              setCategoryFilter(null);
+              setPage(1);
+            }}
+          >
+            Tất cả
+          </button>
+          {categories.map((c) => (
+            <button
+              key={c.id}
+              className={categoryFilter === c.id ? '' : 'btn-secondary'}
+              onClick={() => {
+                setCategoryFilter(c.id);
+                setPage(1);
+              }}
+            >
+              {c.ten}
+            </button>
+          ))}
         </div>
 
         <div className="section">
@@ -274,8 +362,14 @@ const Products = () => {
                     </td>
                     <td>{formatVND(p.gia_ban)}</td>
                     <td>
-                      <span className="pill">{p.size || '-'}</span>{' '}
-                      <span className="pill">{p.chat_lieu || '-'}</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {splitVals(p.size).map((s) => (
+                          <span key={`s-${s}`} className="pill">{s}</span>
+                        ))}
+                        {splitVals(p.chat_lieu).map((m) => (
+                          <span key={`m-${m}`} className="pill">{m}</span>
+                        ))}
+                      </div>
                     </td>
                     <td>
                       {p.gioi_tinh || '-'}
@@ -327,10 +421,7 @@ const Products = () => {
               resetForm();
             }}
           />
-          <div 
-            className="card modal"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="card modal" onClick={(e) => e.stopPropagation()}>
             <h3>{editingId ? `Sửa sản phẩm #${editingId}` : 'Thêm sản phẩm'}</h3>
             <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
               <div>
@@ -346,61 +437,86 @@ const Products = () => {
                   value={formData.gia_ban}
                   onChange={(e) => setFormData({ ...formData, gia_ban: e.target.value })}
                 />
-                <label>Loại</label>
-                <div className="radio-group">
-                  {['Áo', 'Quần'].map((type) => (
-                    <label key={type}>
-                      <input
-                        type="radio"
-                        name="pType"
-                        value={type}
-                        checked={formData.loai === type}
-                        onChange={(e) => setFormData({ ...formData, loai: e.target.value })}
-                      />
-                      {type}
-                    </label>
+
+                <label>Danh mục</label>
+                <select value={formData.category_id} onChange={handleCategoryChange}>
+                  <option value="">-- Chọn danh mục --</option>
+                  {groups.map((g) => (
+                    <optgroup key={g} label={g}>
+                      {categories
+                        .filter((c) => c.nhom === g)
+                        .map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.ten}
+                          </option>
+                        ))}
+                    </optgroup>
                   ))}
-                </div>
-                <label>Size</label>
+                </select>
+
+                {!selectedCategory && (
+                  <p className="muted">Chọn danh mục để hiện size và chất liệu phù hợp.</p>
+                )}
+
+                {selectedCategory && !isFreesize && (
+                  <>
+                    <label>Size (chọn nhiều)</label>
+                    <div className="radio-group">
+                      {selectedCategory.sizes.map((s) => (
+                        <label key={s}>
+                          <input
+                            type="checkbox"
+                            checked={formData.sizes.includes(s)}
+                            onChange={() =>
+                              setFormData({ ...formData, sizes: toggleIn(formData.sizes, s) })
+                            }
+                          />
+                          {s}
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {selectedCategory && isFreesize && (
+                  <p className="muted">Danh mục này là Freesize — không cần chọn size.</p>
+                )}
+
+                {selectedCategory && (
+                  <>
+                    <label>Chất liệu (chọn nhiều)</label>
+                    <div className="radio-group">
+                      {selectedCategory.chat_lieus.map((mat) => (
+                        <label key={mat}>
+                          <input
+                            type="checkbox"
+                            checked={formData.chat_lieus.includes(mat)}
+                            onChange={() =>
+                              setFormData({
+                                ...formData,
+                                chat_lieus: toggleIn(formData.chat_lieus, mat),
+                              })
+                            }
+                          />
+                          {mat}
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <label>Giới tính (chọn nhiều)</label>
                 <div className="radio-group">
-                  {['S', 'M', 'L', 'XL'].map((size) => (
-                    <label key={size}>
-                      <input
-                        type="radio"
-                        name="pSize"
-                        value={size}
-                        checked={formData.size === size}
-                        onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                      />
-                      {size}
-                    </label>
-                  ))}
-                </div>
-                <label>Chất liệu</label>
-                <div className="radio-group">
-                  {['Cotton', 'Polyester', 'Jean', 'Da'].map((mat) => (
-                    <label key={mat}>
-                      <input
-                        type="radio"
-                        name="pMaterial"
-                        value={mat}
-                        checked={formData.chat_lieu === mat}
-                        onChange={(e) => setFormData({ ...formData, chat_lieu: e.target.value })}
-                      />
-                      {mat}
-                    </label>
-                  ))}
-                </div>
-                <label>Giới tính</label>
-                <div className="radio-group">
-                  {['Nam', 'Nữ', 'Unisex'].map((gender) => (
+                  {GENDERS.map((gender) => (
                     <label key={gender}>
                       <input
-                        type="radio"
-                        name="pGender"
-                        value={gender}
-                        checked={formData.gioi_tinh === gender}
-                        onChange={(e) => setFormData({ ...formData, gioi_tinh: e.target.value })}
+                        type="checkbox"
+                        checked={formData.gioi_tinhs.includes(gender)}
+                        onChange={() =>
+                          setFormData({
+                            ...formData,
+                            gioi_tinhs: toggleIn(formData.gioi_tinhs, gender),
+                          })
+                        }
                       />
                       {gender}
                     </label>
@@ -420,15 +536,11 @@ const Products = () => {
                 <input type="file" accept="image/*" onChange={handleFileChange} style={{ width: '100%' }} />
                 {(preview || formData.hinh_anh) && (
                   <div className="img-preview">
-                    <img 
-                      src={preview || getImageUrl(formData.hinh_anh)} 
+                    <img
+                      src={preview || getImageUrl(formData.hinh_anh)}
                       alt="Preview"
                       onError={(e) => {
-                        console.error('[Products] Image load error:', e.target.src);
                         e.target.style.display = 'none';
-                      }}
-                      onLoad={() => {
-                        console.log('[Products] Image loaded successfully:', preview || getImageUrl(formData.hinh_anh));
                       }}
                     />
                     <div>
@@ -440,7 +552,6 @@ const Products = () => {
                         type="button"
                         onClick={() => {
                           setSelectedFile(null);
-                          // Nếu đang edit, giữ lại ảnh hiện tại, nếu không thì xóa preview
                           if (editingId && formData.hinh_anh) {
                             setPreview(getImageUrl(formData.hinh_anh));
                           } else {
@@ -481,4 +592,3 @@ const Products = () => {
 };
 
 export default Products;
-

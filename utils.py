@@ -26,17 +26,15 @@ def client_ip():
 def hmac_sha512(secret, data):
     return hmac.new(secret.encode("utf-8"), data.encode("utf-8"), hashlib.sha512).hexdigest()
 
-def sort_and_query(params: dict):
+def sort_and_query(params: dict, encode: bool = True):
     ordered = sorted(params.items())
-
     query = []
-
     for k, v in ordered:
         if v is not None and v != "":
-            query.append(f"{k}={urlparse.quote_plus(str(v))}")
 
+            val = urlparse.quote_plus(str(v)) if encode else str(v)
+            query.append(f"{k}={val}")
     return "&".join(query)
-
 def get_mysql():
     mysql = current_app.config.get("MYSQL_EXT")
     if mysql is None:
@@ -54,3 +52,32 @@ def admin_required(fn):
             return err("Forbidden", 403)
         return fn(*args, **kwargs)
     return wrapper
+# ==== avatar helpers ====
+def get_current_user_id():
+    from flask_jwt_extended import get_jwt_identity
+    ident = str(get_jwt_identity())
+    if ident.startswith("admin:"):
+        return None
+    try:
+        return int(ident)
+    except ValueError:
+        return None
+    
+from urllib.parse import urljoin
+from flask import request, current_app
+
+def public_base() -> str:
+    base = current_app.config.get("PUBLIC_BASE_URL") or request.url_root
+    if not base.endswith("/"):
+        base += "/"
+    return base
+
+def abs_img(url_or_path):
+    if not url_or_path:
+        return None
+    s = str(url_or_path).strip()
+    if s.startswith("http://") or s.startswith("https://"):
+        return s
+    if not s.startswith("/"):
+        s = "/" + s
+    return urljoin(public_base(), s.lstrip("/"))

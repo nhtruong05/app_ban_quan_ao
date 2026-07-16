@@ -33,6 +33,9 @@ const Header = () => {
             <Link to="/products" className={`tab ${isActive('/products')}`}>
               👕 Quản lý sản phẩm
             </Link>
+            <Link to="/categories" className={`tab ${isActive('/categories')}`}>
+              🗂️ Quản lý danh mục
+            </Link>
             <Link to="/orders" className={`tab ${isActive('/orders')}`}>
               📦 Quản lý đơn hàng
             </Link>

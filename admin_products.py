@@ -36,12 +36,20 @@ def _coalesce_status(val: str) -> str:
         return "Ngừng bán"
     return "Đang bán"
 
-@admin_required
+def _lookup_category_name(mysql, category_id):
+    """Tra ve ten danh muc theo id, hoac None neu khong ton tai."""
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT name FROM categories WHERE id=%s", (category_id,))
+    row = cur.fetchone()
+    return row["name"] if row else None
+
 @admin_products_bp.get("/products")
+@admin_required
 def admin_list_products():
     mysql = get_mysql()
     q         = (request.args.get("q", "") or "").strip()
     category  = (request.args.get("category", "") or "").strip()
+    category_id = (request.args.get("category_id", "") or "").strip()  # NEW: loc theo danh muc moi
     gender    = (request.args.get("gender", "") or "").strip()
     status    = (request.args.get("status", "") or "").strip()
     size      = (request.args.get("size", "") or "").strip()
@@ -63,6 +71,11 @@ def admin_list_products():
         params.extend([f"%{q}%", f"%{q}%"])
     if category:
         wheres.append("loai=%s"); params.append(category)
+    if category_id:  # NEW
+        try:
+            wheres.append("category_id=%s"); params.append(int(category_id))
+        except ValueError:
+            return err("category_id không hợp lệ")
     if gender:
         wheres.append("gioi_tinh=%s"); params.append(gender)
     if status:
@@ -103,8 +116,8 @@ def admin_list_products():
         "total_pages": ceil((total or 0) / page_size) if page_size else 0
     })
 
-@admin_required
 @admin_products_bp.get("/products/<int:pid>")
+@admin_required
 def admin_get_product(pid: int):
     mysql = get_mysql()
     cur = mysql.connection.cursor()
@@ -114,8 +127,8 @@ def admin_get_product(pid: int):
         return err("Không tìm thấy sản phẩm", 404)
     return ok(row)
 
-@admin_required
 @admin_products_bp.post("/products")
+@admin_required
 def admin_create_product():
     mysql = get_mysql()
     data = request.get_json(force=True) or {}
@@ -152,11 +165,28 @@ def admin_create_product():
             hinh_anh = "/" + hinh_anh
     trang_thai = _coalesce_status(data.get("trang_thai"))
 
+    # NEW: Danh muc dong - nhan category_id, tu dong bo cot loai = ten danh muc
+    # (giu cot loai cu de chatbot ChromaDB va app Android hien tai van chay)
+    category_id = data.get("category_id")
+    if category_id in (None, "", 0, "0"):
+        category_id = None
+    else:
+        try:
+            category_id = int(category_id)
+        except Exception:
+            return err("category_id không hợp lệ")
+        cat_name = _lookup_category_name(mysql, category_id)
+        if not cat_name:
+            return err("Danh mục không tồn tại")
+        loai = cat_name
+
     cols = [
         "ten_san_pham", "gia_ban", "loai", "mo_ta",
-        "size", "chat_lieu", "gioi_tinh", "hinh_anh", "trang_thai"
+        "size", "chat_lieu", "gioi_tinh", "hinh_anh", "trang_thai",
+        "category_id"
     ]
-    vals = [ten_san_pham, gia_ban, loai, mo_ta, size, chat_lieu, gioi_tinh, hinh_anh, trang_thai]
+    vals = [ten_san_pham, gia_ban, loai, mo_ta, size, chat_lieu, gioi_tinh, hinh_anh, trang_thai,
+            category_id]
 
     cur = mysql.connection.cursor()
     cur.execute(
@@ -188,8 +218,8 @@ def admin_create_product():
 
     return ok({"message": "Tạo sản phẩm thành công", "products_id": new_id}, 201)
 
-@admin_required
 @admin_products_bp.put("/products/<int:pid>")
+@admin_required
 def admin_update_product(pid: int):
     mysql = get_mysql()
     data = request.get_json(force=True) or {}
@@ -210,9 +240,26 @@ def admin_update_product(pid: int):
             hinh_anh = "/" + hinh_anh
         data["hinh_anh"] = hinh_anh
 
+    # NEW: Danh muc dong - nhan category_id, tu dong bo cot loai = ten danh muc
+    if "category_id" in data:
+        cid = data.get("category_id")
+        if cid in (None, "", 0, "0"):
+            data["category_id"] = None
+        else:
+            try:
+                cid = int(cid)
+            except Exception:
+                return err("category_id không hợp lệ")
+            cat_name = _lookup_category_name(mysql, cid)
+            if not cat_name:
+                return err("Danh mục không tồn tại")
+            data["category_id"] = cid
+            data["loai"] = cat_name
+
     updatable = [
         "ten_san_pham", "gia_ban", "loai", "mo_ta",
-        "size", "chat_lieu", "gioi_tinh", "hinh_anh", "trang_thai"
+        "size", "chat_lieu", "gioi_tinh", "hinh_anh", "trang_thai",
+        "category_id"
     ]
 
     sets, params = [], []
@@ -261,8 +308,8 @@ def admin_update_product(pid: int):
 
     return ok({"message": "Cập nhật sản phẩm thành công"})
 
-@admin_required
 @admin_products_bp.delete("/products/<int:pid>")
+@admin_required
 def admin_delete_product(pid: int):
     mysql = get_mysql()
     cur = mysql.connection.cursor()
@@ -302,8 +349,8 @@ def admin_delete_product(pid: int):
 
     return ok({"message": "Đã xoá sản phẩm"})
 
-@admin_required
 @admin_products_bp.delete("/products")
+@admin_required
 def admin_bulk_delete_products():
     mysql = get_mysql()
     data = request.get_json(force=True) or {}
@@ -378,8 +425,8 @@ def admin_bulk_delete_products():
     
     return ok({"message": message, "deleted": deleted_count, "skipped": len(ids_skipped)})
 
-@admin_required
 @admin_products_bp.put("/products/<int:pid>/status")
+@admin_required
 def admin_update_status(pid: int):
     mysql = get_mysql()
     data = request.get_json(force=True) or {}

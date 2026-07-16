@@ -10,6 +10,7 @@ import Products from './pages/Products';
 import Orders from './pages/Orders';
 import Users from './pages/Users';
 import Reports from './pages/Reports';
+import Categories from "./pages/Categories";
 
 function App() {
   return (
@@ -43,6 +44,16 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/categories"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Categories />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            /> 
             <Route
               path="/orders"
               element={

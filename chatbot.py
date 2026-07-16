@@ -46,7 +46,7 @@ except Exception:
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Model Gemini
-GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "").strip() or "gemini-2.0-flash"
+GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "").strip() or "gemini-2.5-flash"
 GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "").strip()
 
 GENERATION_CONFIG = {
@@ -58,7 +58,7 @@ GENERATION_CONFIG = {
 SAFETY_SETTINGS = [
     {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
     {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-    {"category": "HARM_CATEGORY_SEXUAL", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
     {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
 ]
 
@@ -77,13 +77,13 @@ def _ensure_gemini():
     genai.configure(api_key=key)
 
     preferred = [
-    _normalize_name(GEMINI_MODEL_NAME),
-    _normalize_name(GEMINI_FALLBACK_MODEL),
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
-]
+        _normalize_name(GEMINI_MODEL_NAME),
+        _normalize_name(GEMINI_FALLBACK_MODEL),
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-3.5-flash",
+    ]
+    
     preferred = [m for m in preferred if m]
     preferred = list(dict.fromkeys(preferred))
 
@@ -213,10 +213,14 @@ def reformulate_query(user_query: str) -> str:
     reformulated = user_query.lower()
     
     # Tìm pattern "dưới Xk" hoặc "dưới X000" và thay thế
-    price_pattern = re.search(r'dưới\s*(\d+)\s*k', reformulated)
-    if price_pattern:
-        amount = int(price_pattern.group(1))
-        reformulated = reformulated.replace(price_pattern.group(0), f'giá dưới {amount * 1000}')
+    price_match = (
+            re.search(r'(?:giá\s*)?dưới\s*(\d+)\s*(k)?', user_query.lower())
+            or re.search(r'dưới\s*(\d+)\s*k', user_query.lower())
+        )
+    if price_match:
+            max_price = int(price_match.group(1))
+            if price_match.group(2):  # có chữ "k" đi kèm
+                max_price *= 1000
     
     # Tìm và thay thế các từ khóa khác
     for user_kw, system_kw in query_expansions.items():
@@ -769,7 +773,10 @@ def chat():
         # Filter sản phẩm theo giá nếu user có yêu cầu
         if coll_name == "products" and docs:
             # Tìm pattern giá trong cả original query và reformulated
-            price_pattern = re.search(r'giá\s*dưới\s*(\d+)', query.lower()) or re.search(r'dưới\s*(\d+)\s*k', query.lower())
+            price_pattern = re.search(
+                    r'(\d+)\s*k',
+                    query.lower()
+                ) or re.search(r'dưới\s*(\d+)\s*k', query.lower())
             if price_pattern:
                 # Nếu là pattern "dưới Xk", nhân với 1000
                 max_price = int(price_pattern.group(1))

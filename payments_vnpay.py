@@ -59,30 +59,40 @@ def build_vnpay_payment_url(amount_vnd, order_id: str, order_info: str, ip_addr:
     amount_vnd: số tiền VND (ví dụ 1000000.00). Gửi cho VNPAY phải *100*
     """
     cfg = get_vnpay_config()
+
     try:
         vnp_amount = int(round(float(amount_vnd) * 100))
     except Exception:
         vnp_amount = 0
 
     params = {
-        "vnp_Version": cfg["VNPAY_VERSION"],
-        "vnp_Command": "pay",
-        "vnp_TmnCode": cfg["VNPAY_TMN_CODE"],
-        "vnp_Amount": str(vnp_amount),
-        "vnp_CurrCode": "VND",
-        "vnp_TxnRef": str(order_id),
-        "vnp_OrderInfo": order_info,
-        "vnp_OrderType": "other",
-        "vnp_Locale": "vn",
-        "vnp_ReturnUrl": return_url,
-        "vnp_IpAddr": "127.0.0.1",
+        "vnp_Version":    cfg["VNPAY_VERSION"],
+        "vnp_Command":    "pay",
+        "vnp_TmnCode":    cfg["VNPAY_TMN_CODE"],
+        "vnp_Amount":     str(vnp_amount),
+        "vnp_CurrCode":   "VND",
+        "vnp_TxnRef":     str(order_id),
+        "vnp_OrderInfo":  order_info,
+        "vnp_OrderType":  "other",
+        "vnp_Locale":     "vn",
+        "vnp_ReturnUrl":  return_url,
+        "vnp_IpAddr":     ip_addr or "127.0.0.1",
         "vnp_CreateDate": datetime.now().strftime("%Y%m%d%H%M%S"),
         "vnp_ExpireDate": (datetime.now() + timedelta(minutes=15)).strftime("%Y%m%d%H%M%S"),
     }
 
-    raw = sort_and_query(params)
-    secure_hash = hmac_sha512(cfg["VNPAY_HASH_SECRET"], raw) if cfg["VNPAY_HASH_SECRET"] else ""
-    qs = raw + "&vnp_SecureHashType=HmacSHA512" + f"&vnp_SecureHash={secure_hash}"
+    # Hash và URL đều dùng encode=True để nhất quán với verify_vnp_checksum
+    raw_to_hash = sort_and_query(params, encode=True)
+    secure_hash = hmac_sha512(cfg["VNPAY_HASH_SECRET"], raw_to_hash) if cfg["VNPAY_HASH_SECRET"] else ""
+
+    # ---- DEBUG: in ra để đối chiếu với email VNPAY ----
+    print(f"[VNPAY BUILD] PAYMENT_URL : {cfg['VNPAY_PAYMENT_URL']}")
+    print(f"[VNPAY BUILD] TmnCode     : {cfg['VNPAY_TMN_CODE']}")
+    print(f"[VNPAY BUILD] HashSecret  : {cfg['VNPAY_HASH_SECRET'][:6]}...")
+    print(f"[VNPAY BUILD] raw_string  : {raw_to_hash}")
+    print(f"[VNPAY BUILD] secure_hash : {secure_hash}")
+
+    qs = raw_to_hash + f"&vnp_SecureHashType=HmacSHA512&vnp_SecureHash={secure_hash}"
     return f"{cfg['VNPAY_PAYMENT_URL']}?{qs}"
 
 # ============================================================
@@ -91,9 +101,16 @@ def build_vnpay_payment_url(amount_vnd, order_id: str, order_info: str, ip_addr:
 def verify_vnp_checksum(params: dict) -> bool:
     cfg = get_vnpay_config()
     vnp_secure_hash = params.get("vnp_SecureHash", "")
-    data = {k: v for k, v in params.items() if k not in ("vnp_SecureHash", "vnp_SecureHashType") and v is not None}
-    raw = sort_and_query(data)
+    data = {k: v for k, v in params.items()
+            if k not in ("vnp_SecureHash", "vnp_SecureHashType") and v is not None}
+
+    raw = sort_and_query(data, encode=True)
     calc = hmac_sha512(cfg["VNPAY_HASH_SECRET"], raw)
+
+    print(f"[VNPAY VERIFY] raw   : {raw}")
+    print(f"[VNPAY VERIFY] calc  : {calc.upper()}")
+    print(f"[VNPAY VERIFY] recv  : {vnp_secure_hash.upper()}")
+
     return calc.upper() == vnp_secure_hash.upper()
 
 # ============================================================
@@ -114,15 +131,12 @@ def vnpay_return():
 
     result = "Thành công" if (valid and resp_code == "00" and trans_status == "00") else "Lỗi"
 
-    # Cập nhật đơn hàng khi thanh toán thành công
     if result == "Thành công" and txn_ref:
         try:
             mysql = get_mysql()
             cur = mysql.connection.cursor()
-            # Kiểm tra status hiện tại
             cur.execute("SELECT trangthai FROM orders WHERE id=%s", (int(txn_ref),))
             order = cur.fetchone()
-            # Chỉ update nếu chưa thanh toán
             if order and order.get("trangthai") != "Đã thanh toán":
                 cur.execute("UPDATE orders SET trangthai='Đã thanh toán', payment_token=%s WHERE id=%s",
                             (f"VNPAY_TXN:{txn_no or 'n/a'}", int(txn_ref)))
@@ -135,7 +149,6 @@ def vnpay_return():
             import traceback
             traceback.print_exc()
     elif result != "Thành công" and txn_ref:
-        # Nếu thanh toán thất bại, chuyển sang "Hủy"
         try:
             mysql = get_mysql()
             cur = mysql.connection.cursor()
@@ -200,14 +213,12 @@ def vnpay_ipn():
         return jsonify({"RspCode": "02", "Message": "Order Already Update"})
 
     if vnp_resp_code == "00" and vnp_trans_status == "00":
-        # Thanh toán thành công - cập nhật status thành "Đã thanh toán"
         cur.execute("UPDATE orders SET trangthai='Đã thanh toán', payment_token=%s WHERE id=%s",
                     (f"VNPAY_TXN:{vnp_trans_no}", order_id))
         mysql.connection.commit()
         print(f"[VNPAY-IPN] ✅ Đã cập nhật đơn hàng #{order_id} thành 'Đã thanh toán' (TXN: {vnp_trans_no})")
         return jsonify({"RspCode": "00", "Message": "Confirm Success"})
     else:
-        # Thanh toán thất bại - cập nhật status thành "Hủy"
         cur.execute("UPDATE orders SET trangthai='Hủy', payment_token=%s WHERE id=%s",
                     (f"VNPAY_FAIL:{vnp_resp_code}", order_id))
         mysql.connection.commit()

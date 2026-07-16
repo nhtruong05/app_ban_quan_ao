@@ -5,6 +5,7 @@ from flask import send_from_directory
 import os
 import sys
 
+
 # Fix encoding cho Windows console
 if sys.platform == 'win32':
     try:
@@ -26,10 +27,12 @@ from admin_products import admin_products_bp
 from payments_vnpay import vnpay_bp
 from chatbot import chatbot_bp
 from admin_orders import admin_orders_bp
+from admin_categories import categories_bp 
 
 load_dotenv()
 
 app = Flask(__name__, static_url_path="/static", static_folder="static")
+app.json.ensure_ascii = False
 
 # ===== Secrets / JWT =====
 app.config['SECRET_KEY'] = os.getenv("FLASK_SECRET", "dev")
@@ -42,7 +45,7 @@ app.config['JWT_QUERY_STRING_NAME'] = 'token'
 app.config['MYSQL_HOST'] = os.getenv("MYSQL_HOST", "localhost")
 app.config['MYSQL_PORT'] = int(os.getenv("MYSQL_PORT", "3306"))
 app.config['MYSQL_USER'] = os.getenv("MYSQL_USER", "root")
-app.config['MYSQL_PASSWORD'] = ''
+app.config['MYSQL_PASSWORD'] = '123456'
 app.config['MYSQL_DB'] = os.getenv("MYSQL_DB", "donhattruongapp")
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
@@ -71,6 +74,7 @@ app.register_blueprint(admin_products_bp, url_prefix="/api/admin")
 app.register_blueprint(admin_orders_bp, url_prefix="/api/admin")
 app.register_blueprint(vnpay_bp, url_prefix="/api")
 app.register_blueprint(chatbot_bp, url_prefix="/api")
+app.register_blueprint(categories_bp)
 
 # ===== Health =====
 @app.get("/api/health")
